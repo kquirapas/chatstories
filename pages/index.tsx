@@ -4,17 +4,16 @@ import { motion } from "framer-motion";
 
 const Bubble: React.FC<{
   text: string;
-  active?: boolean;
-}> = ({ text, active = false }) => {
+  sent: boolean;
+}> = ({ text, sent = true }) => {
   return (
     <>
-      {active ? (
-        <div className="font-poppins inline-block max-w-[400px] relative bg-fb-white px-6 py-4 rounded-3xl self-start text-black drop-shadow-lg">
+      {sent ? (
+        <div className="font-poppins inline-block max-w-[400px] relative bg-fb-blue px-4 py-3 rounded-3xl self-start text-white drop-shadow-lg mb-2">
           {text}
-          <span className="animate-blink duration-75">|</span>
         </div>
       ) : (
-        <div className="font-poppins inline-block max-w-[400px] relative bg-black px-6 py-4 rounded-3xl self-start text-white drop-shadow-lg">
+        <div className="font-poppins inline-block max-w-[400px] relative bg-fb-gray px-4 py-3 rounded-3xl self-start text-black drop-shadow-lg mb-2">
           {text}
         </div>
       )}
@@ -22,101 +21,89 @@ const Bubble: React.FC<{
   );
 };
 
-const CHATS_VISIBLE = 3;
+const SCALE_IN_PX = 5;
+const WIDTH = SCALE_IN_PX * 9;
+const HEIGHT = SCALE_IN_PX * 16;
+
+type ChatData = {
+  text: string;
+  sent: boolean;
+};
 
 export default function Home() {
-  const [currentChat, setCurrentChat] = useState<string>("");
-  const [history, setHistory] = useState<string[]>([]);
-
-  const [activeColor, setActiveColor] = useState<string>("#FFFFFF");
-  const [oldColor, setOldColor] = useState<string>("#000000");
-
-  const inputRef = useRef<HTMLInputElement>(null);
-  const activeChatRef = useRef<HTMLInputElement>(null);
-  const oldChatRef = useRef<HTMLInputElement>(null);
+  const [isSending, setIsSending] = useState<boolean>(true);
+  const [activeChat, setActiveChat] = useState<string>("");
+  const [chatHistory, setChatHistory] = useState<ChatData[]>([
+    { text: "sent", sent: true },
+    { text: "received", sent: false },
+  ]);
 
   const handleTyping = (e: any) => {
-    setCurrentChat(e.target.value);
+    if (e.target.value[0] === "!") return;
+    setActiveChat(e.target.value);
   };
 
   const handleEnter = (e: any) => {
-    if (!inputRef.current) return;
-
-    const value = inputRef.current.value.trim();
-
+    const value = e.target.value.trim();
     if (value === "") return;
 
     if (e.key === "Enter") {
-      if (value === "clear") {
-        setHistory([]);
-        setCurrentChat("");
-        inputRef.current.value = "";
+      if (value === "!clear") {
+        setChatHistory([]);
+        setActiveChat("");
+        e.target.value = "";
+        return;
+      } else if (value === "!!") {
+        setIsSending((prev) => !prev);
+        setActiveChat("");
+        e.target.value = "";
+        console.log("sending?", isSending);
         return;
       }
 
-      setHistory((prev) => {
+      setChatHistory((prev) => {
         let newHistory = prev.slice();
-        newHistory.push(value);
+        newHistory.push({ text: value, sent: isSending });
         return newHistory;
       });
-      setCurrentChat("");
-      inputRef.current.value = "";
-      return;
-    }
-  };
 
-  const getOldChats = () => {
-    if (history.length > CHATS_VISIBLE) {
-      const chats = history.slice(
-        history.length - CHATS_VISIBLE,
-        history.length
-      );
-      return chats;
-    } else {
-      return history;
+      setActiveChat("");
+      e.target.value = "";
+      return;
     }
   };
 
   return (
     <>
-      <Head>
-        <title>Typerist</title>
-        <meta
-          name="description"
-          content="Tool you can use to overlay typing chat in your videos"
-        />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link rel="icon" href="/favicon.ico" />
-      </Head>
-      <main className="w-full min-h-screen bg-chroma-key">
-        <div className="absolute bottom-0 left-0 p-8 flex flex-col">
-          <div className="mb-8">
-            {getOldChats().map((e, idx) => (
-              <div key={idx}>
-                <Bubble text={e} />
-                <span className="h-4 block"></span>
-              </div>
-            ))}
-          </div>
-          {currentChat.length > 0 && (
+      <main className="bg-fb-white w-mobile-width h-mobile-height border-black border-2 m-4 p-4 flex flex-col justify-end overflow-hidden">
+        <div className="flex flex-col">
+          {chatHistory.map((e, idx) => (
+            <div key={idx} className={`${e.sent ? "self-end" : "self-start"}`}>
+              <Bubble text={e.text} sent={e.sent} />
+            </div>
+          ))}
+
+          {activeChat.length > 0 && (
             <>
-              <motion.div animate={{ y: -20 }}>
-                <Bubble text={currentChat} active={true} />
-                <span className="h-4 block"></span>
-              </motion.div>
+              {isSending ? (
+                <div className="self-end">
+                  <Bubble text={activeChat} sent={isSending} />
+                </div>
+              ) : (
+                <div className="self-start">
+                  <Bubble text="•••" sent={isSending} />
+                </div>
+              )}
             </>
           )}
         </div>
-        <div className="p-8 flex flex-col w-full">
-          <input
-            className="text-5xl"
-            onKeyDown={handleEnter}
-            onChange={handleTyping}
-            ref={inputRef}
-            type="text"
-          />
-        </div>
       </main>
+      <input
+        className="border-black border-2"
+        onKeyDown={handleEnter}
+        onChange={handleTyping}
+        type="text"
+      />
     </>
   );
 }

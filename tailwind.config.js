@@ -13,6 +13,7 @@ module.exports = {
       colors: {
         "chroma-key": "#00ff00",
         "fb-white": "#fefefe",
+        "fb-gray": "#e4e6ea",
         "fb-blue": "#0084ff",
       },
       fontFamily: {
@@ -27,6 +28,12 @@ module.exports = {
       },
       animation: {
         blink: "pulse-opacity 1s linear infinite",
+      },
+      width: {
+        "mobile-width": "450px",
+      },
+      height: {
+        "mobile-height": "700px",
       },
     },
   },
